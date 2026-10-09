@@ -9,7 +9,7 @@ using HarmonyLib;
 
 namespace BrokenLimbsDontHeal
 {
-    [BepInPlugin("com.harmonyzt.BrokenLimbsDontHeal", "Broken Limbs Dont Heal", "1.0.0")]
+    [BepInPlugin("com.harmonyzt.BrokenLimbsDontHeal", "Broken Limbs Dont Heal", "1.1.0")]
     public class Plugin : BaseUnityPlugin
     {
         public static BepInEx.Logging.ManualLogSource LOGSource;
