@@ -1,8 +1,10 @@
 using System;
 using System.Reflection;
 using BepInEx;
-using BepInEx.Logging;
 using BrokenLimbsDontHeal.Effects;
+using BrokenLimbsDontHeal.Patches;
+using EFT.HealthSystem;
+using EFTEffectManager;
 using HarmonyLib;
 
 namespace BrokenLimbsDontHeal
@@ -10,7 +12,7 @@ namespace BrokenLimbsDontHeal
     [BepInPlugin("com.harmonyzt.BrokenLimbsDontHeal", "Broken Limbs Dont Heal", "1.0.0")]
     public class Plugin : BaseUnityPlugin
     {
-        public static ManualLogSource LOGSource;
+        public static BepInEx.Logging.ManualLogSource LOGSource;
         private Harmony _harmony;
         private volatile bool _penaltiesDirty;
 
@@ -20,7 +22,26 @@ namespace BrokenLimbsDontHeal
             try
             {
                 ModConfig.Init(Config);
-                EffectRegistry.Register();
+
+                // Register our effect
+                EffectsManager.RegisterEffect<HealedFracture>(typeof(Plugin).Assembly, new EffectOptions
+                {
+                    DisplayName = "Healed fracture",
+                    IconFilePath = "HealedFracture.png",
+                    DelayTime = 0f,
+                    PersistAcrossRaids = false,
+                    RemoveOnBodyPartDestroyed = false,
+                    MedHealTriggers = { typeof(IFracture) },
+                    InvalidatedBy = { typeof(IFracture) },
+                });
+
+                EffectsManager.MovementSpeedPenalties.Add("BrokenLimbsDontHeal.LegFracture",
+                    HealedFractureRules.SpeedFraction);
+
+                EffectsManager.ErgonomicsPenalties.Add("BrokenLimbsDontHeal.ArmFracture",
+                    HealedFractureRules.ErgonomicsPenalty);
+
+                // Re-break roll on bullet hits
                 _harmony = new Harmony("com.harmonyzt.BrokenLimbsDontHeal");
                 _harmony.PatchAll(Assembly.GetExecutingAssembly());
 
@@ -52,13 +73,13 @@ namespace BrokenLimbsDontHeal
             }
 
             _penaltiesDirty = false;
-            RaidSession.RefreshPenalties();
+            LifecyclePatches.RefreshPenalties();
         }
 
         private void OnDestroy()
         {
-            RaidSession.End();
             _harmony?.UnpatchSelf();
+
             if (ModConfig.LegPenaltyEnabled == null)
             {
                 return;

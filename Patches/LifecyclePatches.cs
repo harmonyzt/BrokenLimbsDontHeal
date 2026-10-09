@@ -1,25 +1,44 @@
 using System;
-using BrokenLimbsDontHeal.Effects;
 using EFT;
+using EFTEffectManager;
 using HarmonyLib;
 
 namespace BrokenLimbsDontHeal.Patches
 {
+    /// <summary>
+    /// The only raid lifecycle we need: remember the local player so we can refresh the penalties on the go
+    /// Effect creation / invalidation / cleanup and the penalty application itself all live in EFTEffectManager
+    /// </summary>
     public static class LifecyclePatches
     {
+        internal static Player LocalPlayer { get; private set; }
+
+        internal static void RefreshPenalties()
+        {
+            Player player = LocalPlayer;
+            if (player == null)
+            {
+                return;
+            }
+
+            try
+            {
+                EffectsManager.RefreshPenalties(player);
+            }
+            catch (Exception e)
+            {
+                Plugin.LOGSource?.LogError($"[BrokenLimbsDontHeal] Penalty refresh failed: {e}");
+            }
+        }
+
         [HarmonyPatch(typeof(GameWorld), nameof(GameWorld.OnGameStarted))]
         private static class RaidStarted
         {
             [HarmonyPostfix]
             private static void Postfix(GameWorld __instance)
             {
-                try { RaidSession.Begin(__instance); }
-                catch (Exception e)
-                {
-                    RaidSession.End(__instance);
-                    
-                    Plugin.LOGSource.LogError($"[BrokenLimbsDontHeal] Raid initialization failed: {e}");
-                }
+                Player player = __instance?.MainPlayer;
+                LocalPlayer = player != null && player.IsYourPlayer ? player : null;
             }
         }
 
@@ -27,7 +46,10 @@ namespace BrokenLimbsDontHeal.Patches
         private static class WorldDisposing
         {
             [HarmonyPrefix]
-            private static void Prefix(GameWorld __instance) => RaidSession.End(__instance);
+            private static void Prefix()
+            {
+                LocalPlayer = null;
+            }
         }
     }
 }
