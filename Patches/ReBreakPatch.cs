@@ -36,10 +36,10 @@ namespace BrokenLimbsDontHeal.Patches
             };
 
             _suppressedController = null;
-            if (!EffectsManager.IsLocalController(__instance) || !ModConfig.ReBreakEnabled.Value
-                                                      || damage <= 0f || !HealedFractureRules.IsLimb(bodyPart)
-                                                      || (damageInfo.DamageType != EDamageType.Bullet &&
-                                                          damageInfo.DamageType != EDamageType.Sniper))
+            if (!EffectsManager.IsRaidController(__instance) || !ModConfig.ReBreakEnabled.Value
+                                                             || damage <= 0f || !HealedFractureRules.IsLimb(bodyPart)
+                                                             || (damageInfo.DamageType != EDamageType.Bullet &&
+                                                                 damageInfo.DamageType != EDamageType.Sniper))
             {
                 return;
             }
@@ -60,7 +60,7 @@ namespace BrokenLimbsDontHeal.Patches
             float __result, DamageState __state)
         {
             RestoreScope(__state);
-            if (__state.Healed == null || __result <= 0f || !EffectsManager.IsLocalController(__instance))
+            if (__state.Healed == null || __result <= 0f || !EffectsManager.IsRaidController(__instance))
             {
                 return;
             }
@@ -117,7 +117,7 @@ namespace BrokenLimbsDontHeal.Patches
             [HarmonyPrefix]
             private static bool Prefix(ActiveHealthController __instance, EBodyPart bodyPart) =>
                 !ReferenceEquals(_suppressedController, __instance) || _suppressedPart != bodyPart ||
-                !EffectsManager.IsLocalController(__instance);
+                !EffectsManager.IsRaidController(__instance);
         }
     }
 }

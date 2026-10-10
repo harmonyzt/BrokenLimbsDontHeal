@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using BepInEx;
 using BrokenLimbsDontHeal.Effects;
-using BrokenLimbsDontHeal.Patches;
+using EFT;
 using EFT.HealthSystem;
 using EFTEffectManager;
 using HarmonyLib;
@@ -50,11 +50,16 @@ namespace BrokenLimbsDontHeal
                 ModConfig.ArmPenaltyEnabled.SettingChanged += OnPenaltySettingChanged;
                 ModConfig.ArmErgonomicsPenaltyPercent.SettingChanged += OnPenaltySettingChanged;
 
+                EffectsManager.LocalEffectStarted += OnLocalEffectStarted;
+
                 Logger.LogInfo("[BrokenLimbsDontHeal] Loaded!");
             }
             catch (Exception e)
             {
-                _harmony?.UnpatchSelf();
+                try { _harmony?.UnpatchSelf(); }
+                catch (Exception cleanup) { Logger.LogError($"[BrokenLimbsDontHeal] Patch cleanup failed: {cleanup}"); }
+                EffectsManager.MovementSpeedPenalties.Remove("BrokenLimbsDontHeal.LegFracture");
+                EffectsManager.ErgonomicsPenalties.Remove("BrokenLimbsDontHeal.ArmFracture");
                 Logger.LogError($"[BrokenLimbsDontHeal] Init failed: {e}");
                 enabled = false;
             }
@@ -65,6 +70,21 @@ namespace BrokenLimbsDontHeal
             _penaltiesDirty = true;
         }
 
+        private void OnLocalEffectStarted(Player player, IHealthEffect effect)
+        {
+            if (!(effect is IFracture))
+            {
+                return;
+            }
+
+            HealedFracture healed = (player.HealthController as ActiveHealthController)
+                ?.FindExistingEffect<HealedFracture>(effect.BodyPart);
+
+            // Logger.LogInfo($"[BrokenLimbsDontHeal] IFracture started on {effect.BodyPart}; "
+            //     + $"HealedFracture after toolkit handling: "
+            //     + (healed == null ? "removed" : $"PRESENT ({healed.State})"));
+        }
+
         private void Update()
         {
             if (!_penaltiesDirty)
@@ -73,12 +93,15 @@ namespace BrokenLimbsDontHeal
             }
 
             _penaltiesDirty = false;
-            LifecyclePatches.RefreshPenalties();
+            EffectsManager.RefreshPenalties(EffectsManager.RaidPlayer);
         }
 
         private void OnDestroy()
         {
             _harmony?.UnpatchSelf();
+            EffectsManager.LocalEffectStarted -= OnLocalEffectStarted;
+            EffectsManager.MovementSpeedPenalties.Remove("BrokenLimbsDontHeal.LegFracture");
+            EffectsManager.ErgonomicsPenalties.Remove("BrokenLimbsDontHeal.ArmFracture");
 
             if (ModConfig.LegPenaltyEnabled == null)
             {
