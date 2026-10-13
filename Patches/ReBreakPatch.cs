@@ -81,10 +81,6 @@ namespace BrokenLimbsDontHeal.Patches
                 }
 
                 __instance.DoFracture(bodyPart);
-                // if (__instance.FindActiveEffect<IFracture>(bodyPart) != null)
-                // {
-                //     Plugin.LOGSource.LogInfo($"[BrokenLimbsDontHeal] Shot re-broke {bodyPart}");
-                // }
             }
             catch (Exception e)
             {

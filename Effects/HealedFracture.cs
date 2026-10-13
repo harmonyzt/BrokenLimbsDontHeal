@@ -14,6 +14,6 @@ namespace BrokenLimbsDontHeal.Effects
 
         public override float DefaultDelayTime => 1f;
         public override float DefaultWorkTime => DurationSeconds;
-        public override float DefaultResidueTime => 0f;
+        public override float DefaultResidueTime => 5f;
     }
 }

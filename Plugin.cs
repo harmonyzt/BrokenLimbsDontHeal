@@ -31,6 +31,7 @@ namespace BrokenLimbsDontHeal
                     DelayTime = 0f,
                     PersistAcrossRaids = false,
                     RemoveOnBodyPartDestroyed = false,
+                    NetworkEffectType = typeof(Network.HealedFracture),
                     MedHealTriggers = { typeof(IFracture) },
                     InvalidatedBy = { typeof(IFracture) },
                 });
@@ -56,11 +57,20 @@ namespace BrokenLimbsDontHeal
             }
             catch (Exception e)
             {
-                try { _harmony?.UnpatchSelf(); }
-                catch (Exception cleanup) { Logger.LogError($"[BrokenLimbsDontHeal] Patch cleanup failed: {cleanup}"); }
+                try
+                {
+                    _harmony?.UnpatchSelf();
+                }
+                catch (Exception cleanup)
+                {
+                    Logger.LogError($"[BrokenLimbsDontHeal] Patch cleanup failed: {cleanup}");
+                }
+
                 EffectsManager.MovementSpeedPenalties.Remove("BrokenLimbsDontHeal.LegFracture");
                 EffectsManager.ErgonomicsPenalties.Remove("BrokenLimbsDontHeal.ArmFracture");
+                
                 Logger.LogError($"[BrokenLimbsDontHeal] Init failed: {e}");
+                
                 enabled = false;
             }
         }
@@ -79,10 +89,6 @@ namespace BrokenLimbsDontHeal
 
             HealedFracture healed = (player.HealthController as ActiveHealthController)
                 ?.FindExistingEffect<HealedFracture>(effect.BodyPart);
-
-            // Logger.LogInfo($"[BrokenLimbsDontHeal] IFracture started on {effect.BodyPart}; "
-            //     + $"HealedFracture after toolkit handling: "
-            //     + (healed == null ? "removed" : $"PRESENT ({healed.State})"));
         }
 
         private void Update()
